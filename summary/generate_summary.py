@@ -227,5 +227,71 @@ def main():
         print(f"File: {result['file_path']}")
         print(f"Summary: {result['summary'][:150]}...")
 
+    import requests
+    import base64
+    import ast
+    from typing import List
+
+    GITHUB_API_BASE = "https://api.github.com/repos/CornellDataScience/MathSearch/contents"
+
+    def get_github_contents(path: str) -> List[dict]:
+        url = f"{GITHUB_API_BASE}{path}"
+        response = requests.get(url)
+        if response.status_code == requests.codes.ok:
+            return response.json()
+        return []
+
+    def get_file_content(file_path: str) -> str:
+        url = f"{GITHUB_API_BASE}{file_path}"
+        response = requests.get(url)
+        if response.status_code == requests.codes.ok:
+            return base64.b64decode(response.json().get("content", "")).decode("utf-8")
+        return ""
+
+    def parse_python_file(file_path: str) -> List[str]:
+        funcs = []
+        try:
+            content = get_file_content(file_path)
+            if not content:
+                return []
+            
+            tree = ast.parse(content)
+            lines = content.splitlines()
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef):
+                    funcs.append("\n".join(lines[node.lineno - 1 : node.end_lineno]))
+        except:
+            pass
+        
+        return funcs
+
+    def process_file(context: List[str], path: str):
+        if path.endswith(".py"):
+            context.extend(parse_python_file(path))
+        else:
+            content = get_file_content(path)
+            if content:
+                context.append(content)
+
+    def process_dir(context: List[str], path: str):
+        contents = get_github_contents(path)
+
+        readme_file = next((item for item in contents if item["name"].lower().startswith("readme")), None)
+        if readme_file:
+            context.append(get_file_content(f"{path}/{readme_file['name']}"))
+            return
+
+        for item in contents:
+            if item["type"] == "dir":
+                process_dir(context, f"{path}/{item['name']}")
+            else:
+                process_file(context, f"{path}/{item['name']}")
+
+    context = []
+    process_dir(context, "")
+    summary = "\n\n".join(context)
+    print(summary)
+
 if __name__ == "__main__":
     main()

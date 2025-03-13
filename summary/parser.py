@@ -34,3 +34,4 @@ def parse(file_path) -> List[str]:
 
 funcs = parse("/lambda-container/lambda_function.py")
 print(funcs[0])
+print(funcs[1])

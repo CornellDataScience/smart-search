@@ -28,6 +28,9 @@ class ContextAwareFunctionSummaryGenerator:
         self.summaries: List[SummaryResult] = []
 
     def request_file_content(self, file_path):
+        '''
+        requests file content from the github api path self.content_base_url + file_path and returns the file content as a string
+        '''
         try:
             full_path = self.content_base_url + file_path
             resp = requests.get(full_path)

@@ -85,21 +85,20 @@ class ContextAwareFunctionSummaryGenerator:
         resp = requests.get(full_path)
         if resp.status_code == requests.codes.ok:
             contents = resp.json()
+            readme_file = next((item for item in contents if item["name"].lower().startswith("readme")), None)
+            if readme_file:
+                readme_file_content = self.request_file_content(f"{path}/{readme_file['name']}")
+                print(readme_file_content)
+                context += readme_file_content
+
+            for item in contents:
+                if item["type"] == "dir":
+                    self.process_dir(context, f"{path}/{item['name']}")
+                else:
+                    self.process_python_file(context, f"{path}/{item['name']}")
+
         else:
             print(f"Content was not found at path {full_path}")
-
-        readme_file = next((item for item in contents if item["name"].lower().startswith("readme")), None)
-        if readme_file:
-            readme_file_content = self.request_file_content(f"{path}/{readme_file['name']}")
-            print(readme_file_content)
-            context += readme_file_content
-
-        for item in contents:
-            if item["type"] == "dir":
-                self.process_dir(context, f"{path}/{item['name']}")
-            else:
-                self.process_python_file(context, f"{path}/{item['name']}")
-
 
     def parse(self, file_content) -> List[str]:
         '''
@@ -156,10 +155,19 @@ class ContextAwareFunctionSummaryGenerator:
         
         print(f"Generated {len(self.summaries)} function summaries")
 
+    def dumps(self) -> str:
+        '''
+        dumps the summaries into a json string
+        '''
+        return json.dumps([summary.dict() for summary in self.summaries])
 
 def main():
     summarizer = ContextAwareFunctionSummaryGenerator(base_url, content_base_url)
     summarizer.run()
+    #save as json file
+    with open("summaries.json", "w") as f:
+        f.write(summarizer.dumps())
+
     # result = summarizer.summarize("create a short natural language summary of the function", "def add(a, b):\n    return a + b")
     # print(result.metadata)
     # print(result.code)

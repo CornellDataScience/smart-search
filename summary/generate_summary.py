@@ -89,6 +89,7 @@ class ContextAwareFunctionSummaryGenerator:
             summary_result = self.summarize(file_context, func)
             results.append(summary_result)
             print(f"summarized function: {summary_result.summary}")
+            print("-" * 20)
         return results
                 
     def extract_context_from_summaries(summaries : List[SummaryResult]) -> str:
@@ -175,7 +176,7 @@ class ContextAwareFunctionSummaryGenerator:
                     self.summaries += self.process_python_file(context, file_content)
                 except Exception as e:
                     print(f"Error processing file {self.item_name(item)}: {e}")
-                    
+
     def parse(self, file_content) -> List[str]:
         '''
         file_content should be a string of valid python code
@@ -196,7 +197,7 @@ class ContextAwareFunctionSummaryGenerator:
 
     def summarize(self, context: str, target: str) -> SummaryResult:
         try:
-            print(f"prompt: {self.base_prompt + context + target}")
+            #print(f"prompt: {self.base_prompt + context + target}")
             print("Generating summary...")
             
             response = ollama.generate(

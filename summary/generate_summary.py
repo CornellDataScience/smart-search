@@ -245,7 +245,7 @@ def main():
     summarizer = ContextAwareFunctionSummaryGenerator("./data/MathSearch", "./data/MathSearch")
     summarizer.run()
     #save as json file
-    with open("summaries.json", "w") as f:
+    with open("summaries2.json", "w") as f:
         f.write(summarizer.dumps())
 
     # for item in os.listdir("./summary"):

@@ -1,3 +1,6 @@
+# pip install "fastapi[all]" uvicorn ollama
+# uvicorn api:app --reload --port 8000
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +9,15 @@ from pydantic import BaseModel
 import ollama
 
 app = FastAPI()
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with your frontend domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 PROJECT_KEYWORDS = ["project", "task", "assignment"]
 
 class QueryRequest(BaseModel):
@@ -113,16 +125,48 @@ async def filter_query(query):
     relevant = is_relevant(query)
     return {"relevant": relevant}
 
+# @app.post("/request_answer/")
+# async def run(request: QueryRequest):
+#     #call the filter_query function
+#     response = await filter_query(request.query)
+#     if not response["relevant"]:
+#         return JSONResponse(content={"message": "Query is not relevant"}, status_code=200)
+
+#     # Call the sample RAG API function
+#     response = await sample_rag_api(request.query)
+#     return JSONResponse(content=response, status_code=200)
+
 @app.post("/request_answer/")
 async def run(request: QueryRequest):
-    #call the filter_query function
-    response = await filter_query(request.query)
-    if not response["relevant"]:
-        return JSONResponse(content={"message": "Query is not relevant"}, status_code=200)
+    try:
+        #call the filter_query function
+        response = await filter_query(request.query)
+        if not response["relevant"]:
+            return JSONResponse(
+                content={
+                    "message": "Query is not relevant to project-related questions. Please try asking about CDS projects, tasks, or assignments."
+                },
+                status_code=200
+            )
 
-    # Call the sample RAG API function
-    response = await sample_rag_api(request.query)
-    return JSONResponse(content=response, status_code=200)
+        # Call the sample RAG API function
+        rag_response = await sample_rag_api(request)
+        
+        # Format the response to match what the frontend expects
+        return JSONResponse(
+            content={
+                "response": rag_response.get('response', ''),
+                "message": "Success"
+            },
+            status_code=200
+        )
+    except Exception as e:
+        return JSONResponse(
+            content={
+                "message": f"Error processing request: {str(e)}"
+            },
+            status_code=500
+        )
 
 '''
 Installation: 

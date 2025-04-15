@@ -20,7 +20,7 @@ from langchain.prompts import PromptTemplate
 EMBEDDINGS = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
-PERSIST_DIR = "tests/chroma_db"
+PERSIST_DIR = "/Users/jerometh/Projects/CDS/smart-search/tests/chroma_db"
 COLLECTION_NAME = "test"
 
 TEMPLATE = """### Task
@@ -45,9 +45,10 @@ def get_vdb():
     chroma_client = chromadb.PersistentClient(path=PERSIST_DIR)
 
     # Check if a collection exists
-    existing_collections = chroma_client.list_collections()
+    existing_collections = [col.name for col in chroma_client.list_collections()]
     print(existing_collections)
     collection_name = "test"
+    print("existing collections: ---------")
     print(existing_collections)
 
     if collection_name in existing_collections:
@@ -60,12 +61,12 @@ def get_vdb():
         print("Retrieved.")
     else:
         print(f"Collection '{collection_name}' does not exist.")
-        vectordb = Chroma(
-            collection_name=collection_name,
-            embedding_function=EMBEDDINGS,
-            persist_directory=PERSIST_DIR
-        )
-        vectordb.add_texts(texts=data['summary'], metadatas=data['metadata'], ids=data['ids'])
+        # vectordb = Chroma(
+        #     collection_name=collection_name,
+        #     embedding_function=EMBEDDINGS,
+        #     persist_directory=PERSIST_DIR
+        # )
+        # vectordb.add_texts(texts=data['summary'], metadatas=data['metadata'], ids=data['ids'])
     return vectordb
 
 def query(q):
@@ -87,9 +88,9 @@ def get_llm_prompt(q):
     formatted_prompt = template.format(
         context=context,
         question=q
-    )
+   )
 
-    return formatted_prompt
+    return {"prompt" : formatted_prompt, "sources" : [doc.metadata['context'] for doc in docs]}
 
 @app.post("/rag-api/")
 async def sample_rag_api(request: QueryRequest):
@@ -97,13 +98,16 @@ async def sample_rag_api(request: QueryRequest):
     # In a real implementation, this would call the actual API and return the response
     
     #simulate network delay
-    prompt = get_llm_prompt(request.query)
+    res = get_llm_prompt(request.query)
+    prompt = res['prompt']
+    sources = res["sources"]
+
     #use ollama
     response = ollama.generate(
         model='llama3.1:latest',
         prompt=prompt
     )
-    return response
+    return {"sources" : sources, "response": response['response'], "prompt": prompt}
 
 def is_relevant(query: str) -> bool:
     return any(word in query.lower() for word in PROJECT_KEYWORDS)

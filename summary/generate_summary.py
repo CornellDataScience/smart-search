@@ -15,6 +15,10 @@ class SummaryResult(BaseModel):
     code: str
     metadata: dict
 
+class Context(BaseModel):
+    location: str
+    prompt_context: str
+
 class ItemTypes(Flag): 
     PYTHON_FILE = auto()
     DIRECTORY = auto()
@@ -73,7 +77,7 @@ class ContextAwareFunctionSummaryGenerator:
             return self.read_file_content(file_path)
         
         
-    def process_python_file(self, context: str, content: str) -> List[SummaryResult]:
+    def process_python_file(self, context: Context, content: str) -> List[SummaryResult]:
         '''
         called when the traversal encounters a file.
         Requires: content is a string of valid python code
@@ -83,10 +87,9 @@ class ContextAwareFunctionSummaryGenerator:
         functions = self.parse(content)
         print("Functions parsed:", len(functions))
         # Add file-specific information to context
-        file_context = f"Context: {context}"
         results = []
         for func in functions:
-            summary_result = self.summarize(file_context, func)
+            summary_result = self.summarize(context, func)
             results.append(summary_result)
             print(f"summarized function: {summary_result.summary}")
             print("-" * 20)
@@ -154,12 +157,13 @@ class ContextAwareFunctionSummaryGenerator:
             # print(f'item name: {os.path.basename(item)}')
             return os.path.basename(item)
         
-    def process_dir(self, context: List[str], path: str):
+    def process_dir(self, context: Context, path: str):
         print("Processing directory:", path)
         contents = self.get_directory_content(path)
         if not contents:
             return
-
+        
+        context.location = path
         readme_file = next((item for item in contents if self.item_type(item) == ItemTypes.README_FILE), None)
         if readme_file:
             readme_file_content = self.get_file_content(f"{path}/{self.item_name(readme_file)}")
@@ -195,14 +199,14 @@ class ContextAwareFunctionSummaryGenerator:
         return funcs
 
 
-    def summarize(self, context: str, target: str) -> SummaryResult:
+    def summarize(self, context: Context, target: str) -> SummaryResult:
         try:
             #print(f"prompt: {self.base_prompt + context + target}")
             print("Generating summary...")
             
             response = ollama.generate(
                 model="llama3.1:latest",
-                prompt= self.base_prompt + context + target,
+                prompt= self.base_prompt + context.prompt_context + "The code is located in: " + context.location + "Code: " + target,
                 stream = False,
                 options={'num_predict': -1, 'keep_alive': 0},
             )
@@ -212,7 +216,7 @@ class ContextAwareFunctionSummaryGenerator:
             return SummaryResult(
                 summary=summary,
                 code=target,
-                metadata={"context": context}
+                metadata={"context": context.prompt_context, "location": context.location}
             )
         except Exception as e:
             print(f"Error generating summary: {e}")
@@ -228,7 +232,10 @@ class ContextAwareFunctionSummaryGenerator:
         '''
         print(f"Starting code summary generation for repository: {self.content_base_url}")
         
-        initial_context = f"Repository: {self.content_base_url}\n"
+        initial_context = Context(
+            location="",
+            prompt_context="",
+        )
         
         # Start processing from the root directory
         self.process_dir(initial_context, "")
@@ -245,7 +252,7 @@ def main():
     summarizer = ContextAwareFunctionSummaryGenerator("./data/MathSearch", "./data/MathSearch")
     summarizer.run()
     #save as json file
-    with open("summaries2.json", "w") as f:
+    with open("summaries3.json", "w") as f:
         f.write(summarizer.dumps())
 
     # for item in os.listdir("./summary"):

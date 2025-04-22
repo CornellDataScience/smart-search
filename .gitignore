@@ -1,4 +1,6 @@
 /venv/
 /data/
+.env
 #any pycache
 __pycache__/
+*.pyc

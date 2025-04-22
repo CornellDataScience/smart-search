@@ -6,7 +6,11 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 from pydantic import BaseModel
-import ollama
+import dotenv
+from langchain_groq import ChatGroq
+import os
+
+dotenv.load_dotenv()
 
 app = FastAPI()
 # Add CORS middleware
@@ -16,6 +20,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+model = ChatGroq(
+    model_name="llama-3.3-70b-versatile",
+    groq_api_key=os.getenv("GROQ_API_KEY"),
+    temperature=0,
 )
 
 PROJECT_KEYWORDS = ["project", "task", "assignment"]
@@ -114,12 +124,18 @@ async def sample_rag_api(request: QueryRequest):
     prompt = res['prompt']
     sources = res["sources"]
 
-    #use ollama
-    response = ollama.generate(
-        model='llama3.1:latest',
-        prompt=prompt
-    )
-    return {"sources" : sources, "response": response['response'], "prompt": prompt}
+    # message format
+    messages = [
+    (
+        "system",
+        "You are a helpful assistant that answers the user's questions given extra code snippets from the code base as context. You are free to use code snippets as necessary depending on the user prompt, feel free to ignore them if you feel they are not necessary.",
+    ),
+    ("human", prompt),
+]
+
+    # use groq
+    response = model.invoke(messages)
+    return {"sources" : sources, "response": response.content, "prompt": prompt}
 
 def is_relevant(query: str) -> bool:
     return any(word in query.lower() for word in PROJECT_KEYWORDS)

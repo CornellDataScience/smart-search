@@ -5,7 +5,7 @@ import chromadb
 from langchain.prompts import PromptTemplate
 
 data = None
-with open("test_dataset.json", 'r') as json_file:
+with open("vdb/data/vdb_formatted_summaries3.json", 'r') as json_file:
     data = json.load(json_file)
     json_file.close()
 
@@ -13,7 +13,7 @@ with open("test_dataset.json", 'r') as json_file:
 EMBEDDINGS = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
-PERSIST_DIR = "./chroma_db"
+PERSIST_DIR = "./vdb/chroma_db:v2"
 COLLECTION_NAME = "test"
 
 TEMPLATE = """### Task
@@ -58,6 +58,7 @@ def get_vdb():
             persist_directory=PERSIST_DIR
         )
         vectordb.add_texts(texts=data['summary'], metadatas=data['metadata'], ids=data['ids'])
+        vectordb.persist()
     return vectordb
 
 def query(q):
@@ -82,3 +83,7 @@ def get_llm_prompt(q):
     )
 
     return formatted_prompt
+
+
+if __name__ == "__main__":
+    get_vdb()

@@ -32,7 +32,7 @@ from langchain.prompts import PromptTemplate
 EMBEDDINGS = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
-PERSIST_DIR = "/Users/jerometh/Projects/CDS/smart-search/tests/chroma_db"
+PERSIST_DIR = "./vdb/chroma_db:v2"
 COLLECTION_NAME = "test"
 
 TEMPLATE = """### Task
@@ -100,7 +100,7 @@ def get_llm_prompt(q):
     formatted_prompt = template.format(
         context=context,
         question=q
-   )
+    )
 
     return {"prompt" : formatted_prompt, "sources" : [doc.metadata['context'] for doc in docs]}
 

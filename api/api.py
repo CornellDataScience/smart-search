@@ -42,7 +42,7 @@ from langchain.prompts import PromptTemplate
 EMBEDDINGS = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
-PERSIST_DIR = "./vdb/chroma_db:v2"
+PERSIST_DIR = "../vdb/chroma_db"
 COLLECTION_NAME = "test"
 
 TEMPLATE = """### Task

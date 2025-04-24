@@ -12,7 +12,7 @@ import os
 
 dotenv.load_dotenv()
 
-app = FastAPI()
+app = FastAPI(root_path="/api")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,

@@ -114,6 +114,10 @@ def get_llm_prompt(q):
 
     return {"prompt" : formatted_prompt, "sources" : [doc.metadata['context'] for doc in docs]}
 
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
+
 @app.post("/rag-api/")
 async def sample_rag_api(request: QueryRequest):
     # Mock function to simulate the API call

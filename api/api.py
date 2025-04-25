@@ -34,8 +34,8 @@ class QueryRequest(BaseModel):
     query: str
 
 import json
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 import chromadb
 from langchain.prompts import PromptTemplate
 

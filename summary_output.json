@@ -1,0 +1,197 @@
+{
+  "name": "root",
+  "type": "DIRECTORY",
+  "path": "",
+  "summaries": [],
+  "final_summary": {
+    "name": "root",
+    "summary": "Here are two short natural language summaries:\n\n**Directory tests**\nThe directory contains a test file for verifying the accuracy of basic arithmetic operations in Python.\n\n**Directory src/math**\nThis directory holds fundamental functions for performing basic mathematical operations like addition, subtraction, multiplication, and division, with an emphasis on ensuring safe calculations to prevent division by zero errors.",
+    "code": "",
+    "metadata": {},
+    "type": "DIRECTORY"
+  },
+  "children": [
+    {
+      "name": "tests",
+      "type": "DIRECTORY",
+      "path": "test_repo/tests",
+      "summaries": [],
+      "final_summary": {
+        "name": "tests",
+        "summary": "Here is a short natural language summary:\n\n\"This directory contains a test file called `test_math.py` that verifies the accuracy of basic arithmetic operations such as addition, subtraction, multiplication, and division with different types of inputs.\"",
+        "code": "",
+        "metadata": {},
+        "type": "DIRECTORY"
+      },
+      "children": [
+        {
+          "name": "test_math.py",
+          "type": "PYTHON_FILE",
+          "path": "test_repo/tests/test_math.py",
+          "summaries": [
+            {
+              "name": "test_add",
+              "summary": "This code defines a test function `test_add` that checks the functionality of an 'add' function. It tests three different cases: adding two positive numbers, subtracting one from another, and adding zero to itself. The expected results are asserted using assertions to ensure the 'add' function is working as intended.",
+              "code": "def test_add():\n    assert add(2, 3) == 5\n    assert add(-1, 1) == 0\n    assert add(0, 0) == 0",
+              "metadata": {},
+              "type": null
+            },
+            {
+              "name": "test_subtract",
+              "summary": "This code defines a function named `subtract` that takes two numbers as input and returns their difference. The function is then tested with several cases to verify its correctness, including when the inputs are positive and negative, zero for both inputs, and when they are equal.",
+              "code": "def test_subtract():\n    assert subtract(5, 3) == 2\n    assert subtract(1, 1) == 0\n    assert subtract(0, 0) == 0",
+              "metadata": {},
+              "type": null
+            },
+            {
+              "name": "test_multiply",
+              "summary": "This code defines a function called `multiply` that multiplies two numbers together. It includes tests to verify the function works correctly for positive and negative numbers, as well as zero. The function returns the product of its inputs.",
+              "code": "def test_multiply():\n    assert multiply(2, 3) == 6\n    assert multiply(-1, 1) == -1\n    assert multiply(0, 5) == 0",
+              "metadata": {},
+              "type": null
+            },
+            {
+              "name": "test_divide",
+              "summary": "This code defines a testing function called `test_divide` that tests the functionality of a division function named `divide`. The test checks two successful cases (6 divided by 2 equals 3 and 5 divided by 2 equals 2.5), as well as an error case where dividing by zero raises a ZeroDivisionError.",
+              "code": "def test_divide():\n    assert divide(6, 2) == 3\n    assert divide(5, 2) == 2.5\n    with pytest.raises(ZeroDivisionError):\n        divide(1, 0) ",
+              "metadata": {},
+              "type": null
+            }
+          ],
+          "final_summary": {
+            "name": "test_math.py",
+            "summary": "This file contains four testing functions for basic arithmetic operations: addition, subtraction, multiplication, and division. The tests ensure the correctness of these operations across various input scenarios, including positive and negative numbers, zero, and edge cases like dividing by zero.",
+            "code": "import pytest\nfrom src.math.operations import add, subtract, multiply, divide\n\ndef test_add():\n    assert add(2, 3) == 5\n    assert add(-1, 1) == 0\n    assert add(0, 0) == 0\n\ndef test_subtract():\n    assert subtract(5, 3) == 2\n    assert subtract(1, 1) == 0\n    assert subtract(0, 0) == 0\n\ndef test_multiply():\n    assert multiply(2, 3) == 6\n    assert multiply(-1, 1) == -1\n    assert multiply(0, 5) == 0\n\ndef test_divide():\n    assert divide(6, 2) == 3\n    assert divide(5, 2) == 2.5\n    with pytest.raises(ZeroDivisionError):\n        divide(1, 0) ",
+            "metadata": {},
+            "type": "PYTHON_FILE"
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "src",
+      "type": "DIRECTORY",
+      "path": "test_repo/src",
+      "summaries": [],
+      "final_summary": {
+        "name": "src",
+        "summary": "Here's a natural language summary of the Directory math:\n\nThe math directory contains essential functions for basic arithmetic operations like addition, subtraction, multiplication, and division, all centered around the operations.py file. This file includes a divide function that includes error checking to ensure safe calculations when dividing numbers, helping prevent division by zero errors.",
+        "code": "",
+        "metadata": {},
+        "type": "DIRECTORY"
+      },
+      "children": [
+        {
+          "name": "utils",
+          "type": "DIRECTORY",
+          "path": "test_repo/src/utils",
+          "summaries": [],
+          "final_summary": {
+            "name": "utils",
+            "summary": "The helpers.py file contains three useful functions for data analysis: find_max to identify the largest number, find_min to find the smallest, and average to calculate the mean value of a set of numbers.",
+            "code": "",
+            "metadata": {},
+            "type": "DIRECTORY"
+          },
+          "children": [
+            {
+              "name": "helpers.py",
+              "type": "PYTHON_FILE",
+              "path": "test_repo/src/utils/helpers.py",
+              "summaries": [
+                {
+                  "name": "find_max",
+                  "summary": "This function finds the maximum value in a given list of numbers. It checks if the list is empty, raising an error if it is, and then returns the largest number in the list using the built-in `max()` function.",
+                  "code": "def find_max(numbers: List[float]) -> float:\n    \"\"\"\n    Finds the maximum value in a list of numbers.\n    \n    Args:\n        numbers: List of numbers\n        \n    Returns:\n        Maximum value in the list\n        \n    Raises:\n        ValueError: If list is empty\n    \"\"\"\n    if not numbers:\n        raise ValueError(\"List cannot be empty\")\n    return max(numbers)",
+                  "metadata": {},
+                  "type": null
+                },
+                {
+                  "name": "find_min",
+                  "summary": "This function finds the smallest number in a given list. It throws an error if the input list contains no elements.",
+                  "code": "def find_min(numbers: List[float]) -> float:\n    \"\"\"\n    Finds the minimum value in a list of numbers.\n    \n    Args:\n        numbers: List of numbers\n        \n    Returns:\n        Minimum value in the list\n        \n    Raises:\n        ValueError: If list is empty\n    \"\"\"\n    if not numbers:\n        raise ValueError(\"List cannot be empty\")\n    return min(numbers)",
+                  "metadata": {},
+                  "type": null
+                },
+                {
+                  "name": "average",
+                  "summary": "This function calculates the average of a given list of numbers. It takes a list of floating point numbers as input, raises an error if the list is empty, and returns their average value.",
+                  "code": "def average(numbers: List[float]) -> float:\n    \"\"\"\n    Calculates the average of a list of numbers.\n    \n    Args:\n        numbers: List of numbers\n        \n    Returns:\n        Average of the numbers\n        \n    Raises:\n        ValueError: If list is empty\n    \"\"\"\n    if not numbers:\n        raise ValueError(\"List cannot be empty\")\n    return sum(numbers) / len(numbers) ",
+                  "metadata": {},
+                  "type": null
+                }
+              ],
+              "final_summary": {
+                "name": "helpers.py",
+                "summary": "Here's a short natural language summary of the file:\n\nThis file provides three functions to analyze a list of numbers: find_max, find_min, and average. The find_max function finds the largest number in a list, while the find_min function finds the smallest. The average function calculates the mean value of a list of numbers.",
+                "code": "from typing import List, Any\n\ndef find_max(numbers: List[float]) -> float:\n    \"\"\"\n    Finds the maximum value in a list of numbers.\n    \n    Args:\n        numbers: List of numbers\n        \n    Returns:\n        Maximum value in the list\n        \n    Raises:\n        ValueError: If list is empty\n    \"\"\"\n    if not numbers:\n        raise ValueError(\"List cannot be empty\")\n    return max(numbers)\n\ndef find_min(numbers: List[float]) -> float:\n    \"\"\"\n    Finds the minimum value in a list of numbers.\n    \n    Args:\n        numbers: List of numbers\n        \n    Returns:\n        Minimum value in the list\n        \n    Raises:\n        ValueError: If list is empty\n    \"\"\"\n    if not numbers:\n        raise ValueError(\"List cannot be empty\")\n    return min(numbers)\n\ndef average(numbers: List[float]) -> float:\n    \"\"\"\n    Calculates the average of a list of numbers.\n    \n    Args:\n        numbers: List of numbers\n        \n    Returns:\n        Average of the numbers\n        \n    Raises:\n        ValueError: If list is empty\n    \"\"\"\n    if not numbers:\n        raise ValueError(\"List cannot be empty\")\n    return sum(numbers) / len(numbers) ",
+                "metadata": {},
+                "type": "PYTHON_FILE"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "math",
+          "type": "DIRECTORY",
+          "path": "test_repo/src/math",
+          "summaries": [],
+          "final_summary": {
+            "name": "math",
+            "summary": "Here's a short natural language summary:\n\nThis directory contains operations.py, which includes functions for basic arithmetic operations (addition, subtraction, multiplication, and division) that can be used to perform common mathematical calculations on floating-point numbers. The divide function is designed with error handling to prevent division by zero errors.",
+            "code": "",
+            "metadata": {},
+            "type": "DIRECTORY"
+          },
+          "children": [
+            {
+              "name": "operations.py",
+              "type": "PYTHON_FILE",
+              "path": "test_repo/src/math/operations.py",
+              "summaries": [
+                {
+                  "name": "add",
+                  "summary": "The `add` function takes two floating-point numbers as input and returns their sum.",
+                  "code": "def add(a: float, b: float) -> float:\n    \"\"\"\n    Adds two numbers together.\n    \n    Args:\n        a: First number\n        b: Second number\n        \n    Returns:\n        Sum of a and b\n    \"\"\"\n    return a + b",
+                  "metadata": {},
+                  "type": null
+                },
+                {
+                  "name": "subtract",
+                  "summary": "This function calculates the difference between two input numbers, effectively performing subtraction.",
+                  "code": "def subtract(a: float, b: float) -> float:\n    \"\"\"\n    Subtracts second number from first.\n    \n    Args:\n        a: First number\n        b: Second number\n        \n    Returns:\n        Difference between a and b\n    \"\"\"\n    return a - b",
+                  "metadata": {},
+                  "type": null
+                },
+                {
+                  "name": "multiply",
+                  "summary": "This function takes two floating-point numbers as input and returns their product.",
+                  "code": "def multiply(a: float, b: float) -> float:\n    \"\"\"\n    Multiplies two numbers.\n    \n    Args:\n        a: First number\n        b: Second number\n        \n    Returns:\n        Product of a and b\n    \"\"\"\n    return a * b",
+                  "metadata": {},
+                  "type": null
+                },
+                {
+                  "name": "divide",
+                  "summary": "This function divides one floating-point number by another, returning the result. It raises an error if attempting to divide by zero.",
+                  "code": "def divide(a: float, b: float) -> float:\n    \"\"\"\n    Divides first number by second.\n    \n    Args:\n        a: First number\n        b: Second number\n        \n    Returns:\n        Quotient of a and b\n        \n    Raises:\n        ZeroDivisionError: If b is zero\n    \"\"\"\n    if b == 0:\n        raise ZeroDivisionError(\"Cannot divide by zero\")\n    return a / b ",
+                  "metadata": {},
+                  "type": null
+                }
+              ],
+              "final_summary": {
+                "name": "operations.py",
+                "summary": "The file contains four functions for basic arithmetic operations: add, subtract, multiply, and divide. These functions can be used to perform common mathematical calculations on floating-point numbers. The divide function is particularly notable for its error handling mechanism, which ensures that division by zero is not attempted. Overall, the code provides a simple yet effective set of tools for numerical computation.",
+                "code": "def add(a: float, b: float) -> float:\n    \"\"\"\n    Adds two numbers together.\n    \n    Args:\n        a: First number\n        b: Second number\n        \n    Returns:\n        Sum of a and b\n    \"\"\"\n    return a + b\n\ndef subtract(a: float, b: float) -> float:\n    \"\"\"\n    Subtracts second number from first.\n    \n    Args:\n        a: First number\n        b: Second number\n        \n    Returns:\n        Difference between a and b\n    \"\"\"\n    return a - b\n\ndef multiply(a: float, b: float) -> float:\n    \"\"\"\n    Multiplies two numbers.\n    \n    Args:\n        a: First number\n        b: Second number\n        \n    Returns:\n        Product of a and b\n    \"\"\"\n    return a * b\n\ndef divide(a: float, b: float) -> float:\n    \"\"\"\n    Divides first number by second.\n    \n    Args:\n        a: First number\n        b: Second number\n        \n    Returns:\n        Quotient of a and b\n        \n    Raises:\n        ZeroDivisionError: If b is zero\n    \"\"\"\n    if b == 0:\n        raise ZeroDivisionError(\"Cannot divide by zero\")\n    return a / b ",
+                "metadata": {},
+                "type": "PYTHON_FILE"
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

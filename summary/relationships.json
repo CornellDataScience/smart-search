@@ -1,0 +1,15 @@
+{
+  "testrelation/validator.py": [],
+  "testrelation/data_processor.py": [
+    {
+      "target_file": "validator",
+      "description": "Imports validator for The `validator` is used to validate each entry in the processed data list using the `is_valid()` method, which checks if the entry conforms to a specific schema or set of rules."
+    }
+  ],
+  "testrelation/test_relationship.py": [
+    {
+      "target_file": "data_processor",
+      "description": "Imports data_processor for The `DataProcessor` class is used to filter out invalid data from the sample data, specifically items with non-numeric values in the \"value\" field."
+    }
+  ]
+}

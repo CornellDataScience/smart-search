@@ -1,15 +1,34 @@
 {
-  "testrelation/validator.py": [],
-  "testrelation/data_processor.py": [
-    {
-      "target_file": "validator",
-      "description": "Imports validator for The `validator` is used to validate each entry in the processed data list using the `is_valid()` method, which checks if the entry conforms to a specific schema or set of rules."
-    }
-  ],
-  "testrelation/test_relationship.py": [
-    {
-      "target_file": "data_processor",
-      "description": "Imports data_processor for The `DataProcessor` class is used to filter out invalid data from the sample data, specifically items with non-numeric values in the \"value\" field."
-    }
-  ]
+  "testrelation/validator.py": {
+    "uses_relationships": [],
+    "used_by_relationships": [
+      {
+        "used_by": "testrelation/data_processor.py",
+        "description": "data_processor expects validator for the `validator` import is used to validate each entry in the processed data list by calling the `is_valid` method on an instance of `datavalidator`, which checks if the entry conforms to a predefined schema."
+      }
+    ]
+  },
+  "testrelation/data_processor.py": {
+    "uses_relationships": [
+      {
+        "uses": "validator",
+        "description": "Imports validator for The `validator` import is used to validate each entry in the processed data list by calling the `is_valid` method on an instance of `DataValidator`, which checks if the entry conforms to a predefined schema."
+      }
+    ],
+    "used_by_relationships": [
+      {
+        "used_by": "testrelation/test_relationship.py",
+        "description": "test_relationship expects data_processor for the `dataprocessor` class is used to filter out invalid data from a list of dictionaries, specifically by validating the \"value\" field against numerical values."
+      }
+    ]
+  },
+  "testrelation/test_relationship.py": {
+    "uses_relationships": [
+      {
+        "uses": "data_processor",
+        "description": "Imports data_processor for The `DataProcessor` class is used to filter out invalid data from a list of dictionaries, specifically by validating the \"value\" field against numerical values."
+      }
+    ],
+    "used_by_relationships": []
+  }
 }

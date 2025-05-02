@@ -6,8 +6,16 @@ import ast
 import re
 
 class FileRelationship(BaseModel):
-    target_file: str
+    uses: str
     description: str
+
+class UsedByRelationship(BaseModel):
+    used_by: str
+    description: str
+
+class FileContext(BaseModel):
+    uses_relationships: List[FileRelationship]
+    used_by_relationships: List[UsedByRelationship]
 
 class RelationalContext:
     def _build_codebase_index(self) -> None:
@@ -32,7 +40,7 @@ class RelationalContext:
 
     def __init__(self, base_path: str):
         self.base_path = base_path
-        self.relationships: Dict[str, List[FileRelationship]] = {}
+        self.relationships: Dict[str, FileContext] = {}
         self.codebase_files = set()  # Set of all files in the codebase
         self.codebase_packages = set()  # Set of all packages in the codebase
         self._build_codebase_index()  # Build the index on initialization
@@ -51,6 +59,7 @@ class RelationalContext:
         validator.py|Imports DataValidator for validating user input data, enforcing data type constraints, and checking required fields
         
         DO NOT mention generic terms like "use in the code". Instead, describe the specific purposes and functionalities.
+        Description should be clear and concise. Should be a single sentence yet descriptive
         
         Here's the code to analyze:
         """
@@ -120,7 +129,7 @@ class RelationalContext:
                         len(desc) > 20 and  # Ensure description is substantial
                         "use in the code" not in desc.lower()):  # Avoid generic descriptions
                         relationship = FileRelationship(
-                            target_file=target,
+                            uses=target,
                             description=desc
                         )
                         relationships.append(relationship)
@@ -137,7 +146,6 @@ class RelationalContext:
                     Analyze this specific import '{imp}' in the following code and describe 
                     SPECIFICALLY how it is used. Focus on actual functionality, methods called,
                     and purpose in the code. DO NOT use generic descriptions.
-
                     Description should be clear and concise. Should be a single sentence yet descriptive
                     
                     {file_content}
@@ -157,7 +165,7 @@ class RelationalContext:
                     description = detail_response['response'].strip()
                     if len(description) > 20:  # Ensure description is substantial
                         relationship = FileRelationship(
-                            target_file=imp,
+                            uses=imp,
                             description=f"Imports {imp} for {description}"
                         )
                         relationships.append(relationship)
@@ -167,6 +175,56 @@ class RelationalContext:
             print(f"Error analyzing relationships for {file_path}: {e}")
             return []
 
+    def _build_used_by_relationships(self):
+        """Build the used_by relationships for each file based on the uses relationships"""
+        # Initialize used_by lists for all files
+        for file_path in self.relationships:
+            if not isinstance(self.relationships[file_path], FileContext):
+                self.relationships[file_path] = FileContext(
+                    uses_relationships=self.relationships[file_path],
+                    used_by_relationships=[]
+                )
+
+        # Build used_by relationships
+        for source_file, context in self.relationships.items():
+            for relationship in context.uses_relationships:
+                target_file = relationship.uses
+                # Convert to full path if needed
+                if not target_file.endswith('.py'):
+                    target_file = f"{target_file}.py"
+                if not target_file.startswith('testrelation/'):
+                    target_file = f"testrelation/{target_file}"
+                
+                # Add used_by relationship to the target file
+                if target_file in self.relationships:
+                    # Rephrase description from target's perspective
+                    original_desc = relationship.description.lower()
+                    
+                    # Remove common import prefixes if they exist
+                    desc = original_desc
+                    for prefix in ["imports", "uses", "utilizes"]:
+                        if desc.startswith(prefix.lower()):
+                            desc = desc[len(prefix):].strip()
+                            if desc.startswith("for"):
+                                desc = desc[3:].strip()
+                    
+                    # Extract the component name if mentioned
+                    component = ""
+                    if target_file.replace(".py", "") in desc:
+                        parts = desc.split(target_file.replace(".py", ""))
+                        if len(parts) > 1:
+                            desc = parts[1].strip()
+                    
+                    # Create the new description
+                    source_name = os.path.basename(source_file).replace(".py", "")
+                    new_desc = f"{source_name} expects {desc}"
+                    
+                    used_by = UsedByRelationship(
+                        used_by=source_file,
+                        description=new_desc
+                    )
+                    self.relationships[target_file].used_by_relationships.append(used_by)
+
     def process_file(self, file_path: str) -> None:
         """Process a single file and store its relationships"""
         try:
@@ -174,7 +232,10 @@ class RelationalContext:
                 content = f.read()
             
             relationships = self._analyze_file_relationships(file_path, content)
-            self.relationships[file_path] = relationships
+            self.relationships[file_path] = FileContext(
+                uses_relationships=relationships,
+                used_by_relationships=[]
+            )
         except Exception as e:
             print(f"Error processing file {file_path}: {e}")
 
@@ -189,21 +250,16 @@ class RelationalContext:
                 if file.endswith('.py'):
                     full_path = os.path.join(root, file)
                     self.process_file(full_path)
-
-    def get_relationships(self, file_path: str) -> List[FileRelationship]:
-        """Get all relationships for a specific file"""
-        return self.relationships.get(file_path, [])
-
-    def get_all_relationships(self) -> Dict[str, List[FileRelationship]]:
-        """Get all relationships for all files"""
-        return self.relationships
+        
+        # After processing all files, build the used_by relationships
+        self._build_used_by_relationships()
 
     def save_to_json(self, output_file: str) -> None:
         """Save relationships to a JSON file"""
         import json
         with open(output_file, 'w') as f:
             json.dump(
-                {k: [r.model_dump() for r in v] for k, v in self.relationships.items()},
+                {k: v.model_dump() for k, v in self.relationships.items()},
                 f,
                 indent=2
             )
@@ -214,7 +270,7 @@ class RelationalContext:
         with open(input_file, 'r') as f:
             data = json.load(f)
             self.relationships = {
-                k: [FileRelationship(**r) for r in v]
+                k: FileContext(**v)
                 for k, v in data.items()
             }
 

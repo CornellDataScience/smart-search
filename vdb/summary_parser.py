@@ -59,3 +59,8 @@ def test_conversion(filepath):
         
     
 test_conversion("../summary_output.json")
+
+
+with open("data/langchain_docs.json", 'r') as json_file:
+    data = json.load(json_file)
+    json_file.close()

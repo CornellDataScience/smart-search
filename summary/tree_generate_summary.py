@@ -14,6 +14,7 @@ class SummaryResult(BaseModel):
     summary: str
     code: str
     metadata: dict
+    type: Optional[str] = None  # Add type field
 
 class ItemTypes(Flag): 
     PYTHON_FILE = auto()
@@ -22,14 +23,13 @@ class ItemTypes(Flag):
     OTHER = auto()
 class Node: 
     def __init__(self, name: str, node_type: ItemTypes, path: str, summaries: List[SummaryResult] = None, 
-                 final_summary: SummaryResult = None, context: str = "", children: List['Node'] = None, 
+                 final_summary: SummaryResult = None, children: List['Node'] = None, 
                  parent: Optional['Node'] = None): 
         self.name = name
         self.type = node_type
         self.path = path
         self.summaries = summaries or []
         self.final_summary = final_summary
-        self.context = context
         self.children = children or []
         self.parent = parent
 
@@ -94,14 +94,20 @@ class ContextAwareFunctionSummaryGenerator:
         
                 
     def extract_context_from_function_summaries(self, summaries: List[SummaryResult]) -> str: 
-        context = "These are all the function summaries in this python file: \n"
-        for summary in summaries: 
-            context += "This is the summary for the function " + summary.name + ":\n" + summary.summary + "\n"
+        # Aggregate all function summaries for the LLM to generate a file summary
+        context = "Here are summaries of all functions in this file:\n\n"
+        for summary in summaries:
+            context += f"Function {summary.name}:\n{summary.summary}\n\n"
         return context
+
     def extract_context_from_directory_summaries(self, summaries: List[SummaryResult]) -> str:
-        context = "These are all the summaries for the functions in this directory: \n"
-        for summary in summaries: 
-            context += "This is the summary for the file or directory " + summary.name + ":\n" + summary.summary + "\n"
+        # Aggregate all child summaries for the LLM to generate a directory summary
+        context = "Here are summaries of all items in this directory:\n\n"
+        for summary in summaries:
+            if summary.type == "DIRECTORY":
+                context += f"Directory {summary.name}:\n{summary.summary}\n\n"
+            else:
+                context += f"File {summary.name}:\n{summary.summary}\n\n"
         return context
 
     def item_type(self, item) -> ItemTypes:
@@ -118,12 +124,13 @@ class ContextAwareFunctionSummaryGenerator:
             else:
                 raise ValueError("Unknown item type, not directory or file")
         else:
-            # Simple check - if it ends with .py, it's a Python file
-            if item.endswith(".py"):
+            # For file type checks, use just the item name
+            item_name = os.path.basename(item)
+            if item_name.endswith(".py"):
                 return ItemTypes.PYTHON_FILE
-            elif item.lower().startswith("readme"):
+            elif item_name.lower().startswith("readme"):
                 return ItemTypes.README_FILE
-            elif os.path.isdir(os.path.join(self.base_url, item)):
+            elif os.path.isdir(item):  # For directory check, use the full path
                 return ItemTypes.DIRECTORY
             else:
                 return ItemTypes.OTHER
@@ -144,28 +151,31 @@ class ContextAwareFunctionSummaryGenerator:
         import ast
 
         funcs = []
+        try:
+            tree = ast.parse(file_content)
+            lines = file_content.splitlines()
 
-        tree = ast.parse(file_content)
-        lines = file_content.splitlines()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef):
+                    funcs.append({
+                        "name": node.name,  # Get the function name
+                        "code": "\n".join(lines[node.lineno - 1 : node.end_lineno])
+                    })
+            return funcs
+        except Exception as e:
+            print(f"Error parsing file: {e}")
+            return []
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef):
-                funcs.append({
-                    "name": node.name,  # Get the function name
-                    "code": "\n".join(lines[node.lineno - 1 : node.end_lineno])
-                })
-
-        return funcs
 
 
   
-    def summarize_function(self, context: str, target_code: str, name: str) -> SummaryResult:
+    def summarize_function(self, target_code: str, name: str) -> SummaryResult:
         try:
             print(f"Generating summary for function: {name}")
             
             response = ollama.generate(
                 model="llama3.2:latest",
-                prompt= self.function_prompt + "\n" + context + "\n" + target_code,
+                prompt= self.function_prompt + "\n" + target_code,
                 stream = False,
                 options={'num_predict': -1, 'keep_alive': 0},
             )
@@ -176,7 +186,7 @@ class ContextAwareFunctionSummaryGenerator:
                 name=name,
                 summary=summary,
                 code=target_code,
-                metadata={"context": context}
+                metadata={}
             )
         except Exception as e:
             print(f"Error generating summary: {e}")
@@ -184,13 +194,13 @@ class ContextAwareFunctionSummaryGenerator:
                 name=name,
                 summary=f"Error generating summary: {str(e)}",
                 code=target_code,
-                metadata={"context": context, "error": str(e)}
+                metadata={"error": str(e)}
             )
-    def summarize_file(self, context: str, target_summaries: str, name: str) -> SummaryResult:
+    def summarize_file(self, target_summaries: str, name: str) -> SummaryResult:
         try:
             response = ollama.generate(
                 model="llama3.2:latest",
-                prompt= self.file_prompt + context + target_summaries,
+                prompt= self.file_prompt + target_summaries,
                 stream = False,
                 options={'num_predict': -1, 'keep_alive': 0},
             )
@@ -198,22 +208,22 @@ class ContextAwareFunctionSummaryGenerator:
             return SummaryResult(
                 name=name,
                 summary=summary,
-                code=target_summaries,
-                metadata={"context": context}
+                code="",  # Keep the raw code for files
+                metadata={}
             )
         except Exception as e:
             print(f"Error generating summary: {e}")
             return SummaryResult(
                 name=name,
                 summary=f"Error generating summary: {str(e)}",
-                code=target_summaries,
-                metadata={"context": context, "error": str(e)}
+                code=target_summaries,  # Keep the raw code for files
+                metadata={"error": str(e)}
             )
-    def summarize_directory(self, context: str, target_summaries: str, name: str) -> SummaryResult:
+    def summarize_directory(self, target_summaries: str, name: str) -> SummaryResult:
         try:
             response = ollama.generate(
                 model="llama3.2:latest",
-                prompt= self.directory_prompt + context + target_summaries,
+                prompt= self.directory_prompt + target_summaries,
                 stream = False,
                 options={'num_predict': -1, 'keep_alive': 0},
             )
@@ -221,16 +231,16 @@ class ContextAwareFunctionSummaryGenerator:
             return SummaryResult(
                 name=name,
                 summary=summary,
-                code=target_summaries,  
-                metadata={"context": context}
+                code="",  # Always empty string for directories
+                metadata={}
             )
         except Exception as e:
             print(f"Error generating summary: {e}")
             return SummaryResult(
                 name=name,
                 summary=f"Error generating summary: {str(e)}",
-                code=target_summaries,  
-                metadata={"context": context, "error": str(e)}
+                code="",  # Always empty string for directories
+                metadata={"error": str(e)}
             )
     def make_context(self, context: str, summary: str) -> str:
         try:
@@ -266,17 +276,15 @@ class ContextAwareFunctionSummaryGenerator:
 
 
 
-    def process_python_file(self, context: str, content: str) -> List[SummaryResult]:
+    def process_python_file(self, content: str) -> List[SummaryResult]:
         if content is None:  # Skip if file wasn't found
             return []
         print("Parsing functions...")
         functions = self.parse(content)
         print("Functions parsed:", len(functions))
-        # Add file-specific information to context
-        file_context = f"Context: {context}"
         results = []
         for func in functions:
-            summary_result = self.summarize_function(file_context, func["code"], func["name"])
+            summary_result = self.summarize_function(func["code"], func["name"])
             results.append(summary_result)
             print(f"summarized function {func['name']}: {summary_result.summary}")
             print("-" * 20)
@@ -297,7 +305,7 @@ class ContextAwareFunctionSummaryGenerator:
         for item in contents: 
             print(f"\nProcessing item: {item}")
             item_path = os.path.join(path, item)
-            item_type = self.item_type(item)
+            item_type = self.item_type(item_path)  # Pass the full path instead of just the item name
             print(f"Item type: {item_type}")
             item_name = self.item_name(item)
             
@@ -307,7 +315,6 @@ class ContextAwareFunctionSummaryGenerator:
                 path=item_path,
                 summaries=[],
                 final_summary=EMPTY_RESULT,
-                context=node.context + "\n" if node is not None else "",
                 children=[],
                 parent=node
             )
@@ -317,10 +324,13 @@ class ContextAwareFunctionSummaryGenerator:
                 file_content = self.get_file_content(item_path)
                 if file_content is not None:
                     print("File content loaded successfully")
-                    summaries = self.process_python_file(node.context, file_content)
+                    summaries = self.process_python_file(file_content)
                     child_node.summaries = summaries
+                    # Get function summaries for file summary
                     final_summary_target = self.extract_context_from_function_summaries(summaries)
-                    final_summary = self.summarize_function(child_node.context, final_summary_target, item_name)
+                    final_summary = self.summarize_file(final_summary_target, item_name)
+                    final_summary.code = file_content  # Store raw file content
+                    final_summary.type = "PYTHON_FILE"  # Set type
                     child_node.final_summary = final_summary
                     node.children.append(child_node)
                 else:
@@ -330,9 +340,11 @@ class ContextAwareFunctionSummaryGenerator:
                 file_content = self.get_file_content(item_path)
                 if file_content is not None:
                     print("File content loaded successfully")
-                    child_node.final_summary = self.summarize_file("There is no context for this file. This is the README file for the repository so this will be the baseline context", file_content, item_name)
+                    final_summary = self.summarize_file(file_content, item_name)
+                    final_summary.code = file_content  # Store raw file content
+                    final_summary.type = "README_FILE"  # Set type
+                    child_node.final_summary = final_summary
                     child_node.summaries = [child_node.final_summary]
-                    child_node.parent.context = self.make_context("", child_node.final_summary.summary)
             elif item_type == ItemTypes.DIRECTORY:
                 print(f"Processing directory: {item_path}")
                 self.process_dir(child_node, item_path)
@@ -346,10 +358,9 @@ class ContextAwareFunctionSummaryGenerator:
         
         if summariesfromnode:  # Only generate directory summary if there are child summaries
             final_summary_target = self.extract_context_from_directory_summaries(summariesfromnode)
-            final_summary = self.summarize_directory(node.context, final_summary_target, node.name)
+            final_summary = self.summarize_directory(final_summary_target, node.name)
+            final_summary.type = "DIRECTORY"  # Set type
             node.final_summary = final_summary
-            if node.parent:
-                node.context = self.make_context(node.context, final_summary.summary)
         return node
                 
 
@@ -363,7 +374,6 @@ class ContextAwareFunctionSummaryGenerator:
             path="",
             summaries=[],
             final_summary=EMPTY_RESULT,
-            context="",
             children=[],
             parent=None
         )
@@ -375,22 +385,29 @@ class ContextAwareFunctionSummaryGenerator:
         return self.root
     def dumps(self) -> str:
         """
-        Traverses the tree and collects all summaries into a JSON string
+        Traverses the tree and converts the entire structure to a JSON string
         """
-        all_summaries = []
-        
-        def collect_summaries(node: Node):
-            all_summaries.extend(node.summaries)
+        def node_to_dict(node: Node):
+            """Convert a node and its children to a dictionary"""
+            result = {
+                "name": node.name,
+                "type": node.type.name,
+                "path": node.path,
+                "summaries": [summary.dict() for summary in node.summaries],
+                "final_summary": node.final_summary.dict() if node.final_summary else None,
+                "children": []
+            }
             
-            if node.final_summary:
-                all_summaries.append(node.final_summary)
-                
             for child in node.children:
-                collect_summaries(child)
+                result["children"].append(node_to_dict(child))
+            
+            return result
         
-        collect_summaries(self.root)
+        # Convert the entire tree to a dictionary
+        tree_dict = node_to_dict(self.root)
         
-        return json.dumps([summary.dict() for summary in all_summaries])
+        # Convert to JSON string with pretty printing
+        return json.dumps(tree_dict, indent=2)
 
 def main():
     print("Starting summary generation...")
@@ -398,8 +415,12 @@ def main():
     print("Processing repository...")
     generator.run()
     print("Generating JSON output...")
-    print(generator.dumps())
-    print("Done!")
+    
+    # Save the output to a JSON file
+    json_output = generator.dumps()
+    with open("summary_output.json", "w") as f:
+        f.write(json_output)
+    print("Done! Output saved to summary_output.json")
 
 if __name__ == "__main__":
     main()
